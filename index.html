@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Реальный чат на Firebase</title>
+<!-- Иконки -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #111;
+    color: #eee;
+    margin: 0;
+    padding: 20px;
+  }
+
+  h2 {
+    margin-top: 0;
+  }
+
+  #nameInputContainer, #chatContainer {
+    background-color: #222;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    max-width: 700px;
+    margin: 0 auto 20px auto;
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: fadeInUp 0.5s forwards;
+  }
+
+  @keyframes fadeInUp {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  input[type="text"] {
+    padding: 10px;
+    width: calc(100% - 22px);
+    border: none;
+    border-radius: 5px;
+    margin-top: 10px;
+    background-color: #333;
+    color: #fff;
+    font-size: 16px;
+  }
+
+  button {
+    background-color: #555;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    margin: 8px 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  button:hover {
+    background-color: #777;
+    transform: scale(1.05);
+  }
+
+  #chat {
+    background-color: #000;
+    height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #555;
+  }
+
+  .message {
+    margin-bottom: 10px;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #333;
+    transition: background-color 0.3s ease;
+  }
+
+  .message:hover {
+    background-color: #444;
+  }
+</style>
+</head>
+<body>
+
+<div id="nameInputContainer">
+  <h2>Введите ваше имя:</h2>
+  <input type="text" id="nameInput" placeholder="Ваше имя" />
+  <button onclick="saveName()"><i class="fas fa-user"></i> Продолжить</button>
+</div>
+
+<div id="chatContainer" style="display:none;">
+  <h2>Реальный чат</h2>
+  <div id="chat"></div>
+  <input type="text" id="messageInput" placeholder="Ваше сообщение" />
+  <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i> Отправить</button>
+</div>
+
+<script>
+  // Вставьте сюда вашу Firebase конфигурацию
+  const firebaseConfig = {
+    apiKey: "AIzaSyAf5ndFxwcuhHv4IIRFrq-gUh623Kp75uk",
+    authDomain: "social-690cd.firebaseapp.com",
+     databaseURL: "https://social-690cd-default-rtdb.firebaseio.com/",
+    projectId: "social-690cd",
+    storageBucket: "social-690cd.firebasestorage.app",
+    messagingSenderId: "628863151859",
+    appId: "1:628863151859:web:386fe235f6639a310ad186",
+    measurementId: "G-VR712TPX4T"
+  };
+
+  // Инициализация Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  let userName = '';
+
+  function saveName() {
+    const name = document.getElementById('nameInput').value.trim();
+    if (name === '') {
+      alert('Пожалуйста, введите имя');
+      return;
+    }
+    userName = name;
+    document.getElementById('nameInputContainer').style.transition = 'opacity 0.5s';
+    document.getElementById('nameInputContainer').style.opacity = 0;
+    setTimeout(() => {
+      document.getElementById('nameInputContainer').style.display = 'none';
+      showChat();
+    }, 500);
+  }
+
+  function showChat() {
+    document.getElementById('chatContainer').style.display = 'block';
+    loadMessages();
+    listenForMessages();
+  }
+
+  function loadMessages() {
+    const chatRef = database.ref('messages');
+    chatRef.once('value', snapshot => {
+      const messages = snapshot.val() || {};
+      displayMessages(messages);
+    });
+  }
+
+  function listenForMessages() {
+    const chatRef = database.ref('messages');
+    chatRef.on('child_added', snapshot => {
+      const message = snapshot.val();
+      addMessageToChat(message);
+    });
+  }
+
+  function addMessageToChat(message) {
+    const chatDiv = document.getElementById('chat');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message';
+    msgDiv.innerText = message;
+    chatDiv.appendChild(msgDiv);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+  }
+
+  function sendMessage() {
+    const messageInput = document.getElementById('messageInput');
+    const messageText = messageInput.value.trim();
+    if (messageText === '') return;
+    const message = `${userName}: ${messageText}`;
+    const newMsgRef = database.ref('messages').push();
+    newMsgRef.set(message);
+    messageInput.value = '';
+  }
+</script>
+
+</body>
+</html>
